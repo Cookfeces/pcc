@@ -22,7 +22,7 @@ parts/
 sdist/
 var/
 *.egg-info/
-.idea/
+*.idea/
 .installed.cfg
 *.egg
 
