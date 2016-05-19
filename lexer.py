@@ -7,6 +7,8 @@ class Tag:
     ID = 257
     TRUE = 258
     FALSE = 259
+    REL = 260
+    FLOAT = 261
 
 
 #  无法错误异常类
@@ -32,6 +34,18 @@ class Word(Token):
         self.lexeme = s
 
 
+class Rel(Token):
+    def __init__(self, s):
+        Token.__init__(self, Tag.REL)
+        self.content = s
+
+
+class Float(Token):
+    def __init__(self, v):
+        Token.__init__(self, Tag.FLOAT)
+        self.value = v
+
+
 class Lexer:
     index = 0
     line = 1
@@ -49,6 +63,7 @@ class Lexer:
     def peek(self):
         return self.input[self.index]
 
+    #  做词法分析,分析完之后index停留在返回词法的末尾
     def scan(self):
         #  跳过空字符串
         while self.index < len(self.input):
@@ -87,15 +102,31 @@ class Lexer:
                     raise SyntaxException("Cannot find the end of comment '*/'. ")
             else:
                 raise SyntaxException()
+        #  处理比较符号
+        if self.peek() in "<=!>":
+            rel_content = self.peek()
+            if self.index < (len(self.input) - 1) and self.input[self.index+1] == "=":
+                self.index += 1
+                rel_content += self.peek()
+            return Rel(rel_content)
         #  数字
-        if self.peek().isdigit():
+        if self.peek().isdigit() or self.peek() == ".":
             num_start = self.index
+            is_dot_exist = False
             while self.index < len(self.input):
-                if not(self.peek().isdigit()):
+                if self.peek() == ".":
+                    if is_dot_exist:
+                        self.index -= 1
+                    else:
+                        is_dot_exist = True
+                if not(self.peek().isdigit() or self.peek() == "."):
                     break
                 else:
                     self.index += 1
-            return Num(int(self.input[num_start:self.index]))
+            if is_dot_exist:
+                return Float(float(self.input[num_start:self.index]))
+            else:
+                return Num(int(self.input[num_start:self.index]))
         if self.peek().isalpha():
             str_start = self.index
             while self.index < len(self.input):
@@ -129,3 +160,9 @@ lexer = Lexer('//dasd\ns821')
 print(lexer.scan())
 lexer = Lexer("/**/")
 print(lexer.scan())
+lexer = Lexer("<=")
+res = lexer.scan()
+print(res, res.content)
+lexer = Lexer(".1")
+res = lexer.scan()
+print(res, res.value)
