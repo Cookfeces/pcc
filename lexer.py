@@ -9,6 +9,12 @@ class Tag:
     FALSE = 259
 
 
+#  无法错误异常类
+class SyntaxException(BaseException):
+    def __init__(self, arg="Syntax Error!"):
+        self.error_message = arg
+
+
 class Token:
     def __init__(self, t):
         self.tag = t
@@ -44,6 +50,7 @@ class Lexer:
         return self.input[self.index]
 
     def scan(self):
+        #  跳过空字符串
         while self.index < len(self.input):
             if self.peek() == ' ' or self.peek() == '\t':
                 self.index += 1
@@ -53,7 +60,35 @@ class Lexer:
                 self.line += 1
             else:
                 break
-        if self.input[self.index].isdigit():
+        #  处理注释
+        if self.peek() == '/':
+            self.index += 1
+            #  单行注释
+            if self.peek() == '/':
+                self.index += 1
+                while self.index < len(self.input):
+                    if self.peek() == '\n':
+                        break
+                    else:
+                        self.index += 1
+            #  多行注释
+            elif self.peek() == '*':
+                is_found = False
+                self.index += 1
+                while self.index < (len(self.input) - 1):
+                    if self.peek() == '*':
+                        self.index += 1
+                        if self.peek() == '/':
+                            is_found = True
+                            break
+                    else:
+                        self.index += 1
+                if not is_found:
+                    raise SyntaxException("Cannot find the end of comment '*/'. ")
+            else:
+                raise SyntaxException()
+        #  数字
+        if self.peek().isdigit():
             num_start = self.index
             while self.index < len(self.input):
                 if not(self.peek().isdigit()):
@@ -68,11 +103,13 @@ class Lexer:
                     break
                 else:
                     self.index += 1
-            str = self.input[str_start:self.index]
-            if self.words.get(str) != None:
-                return self.words.get(str)
+            token_str = self.input[str_start:self.index]
+            #  关键字
+            if self.words.get(token_str) != None:
+                return self.words.get(token_str)
+            #  标识符
             else:
-                w = Word(Tag.ID, str)
+                w = Word(Tag.ID, token_str)
                 self.reserve(w)
                 return w
         t = Token(ord(self.peek()))
@@ -82,7 +119,13 @@ class Lexer:
 
 lexer = Lexer(" 821")
 print(lexer.scan())
-lexer2 = Lexer(" s821")
-print(lexer2.scan())
-lexer2 = Lexer(" #s821")
-print(lexer2.scan())
+lexer = Lexer(" s821")
+print(lexer.scan())
+lexer = Lexer(" #s821")
+print(lexer.scan())
+lexer = Lexer(" s821//dasd")
+print(lexer.scan())
+lexer = Lexer('//dasd\ns821')
+print(lexer.scan())
+lexer = Lexer("/**/")
+print(lexer.scan())
