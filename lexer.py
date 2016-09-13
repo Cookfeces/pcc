@@ -11,7 +11,7 @@ class Tag:
     FLOAT = 261
 
 
-#  无法错误异常类
+#  非法错误异常类
 class SyntaxException(BaseException):
     def __init__(self, arg="Syntax Error!"):
         self.error_message = arg
